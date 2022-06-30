@@ -1,3 +1,8 @@
+## INSTALLATION
+```lua
+use("loctvl842/winbar")
+```
+
 ## CONFIGURATION
 ```lua
 local status_ok, winbar = pcall(require, "winbar")
