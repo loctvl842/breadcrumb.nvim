@@ -2,7 +2,6 @@ local ts_utils = require("nvim-treesitter.ts_utils")
 local ts_parsers = require("nvim-treesitter.parsers")
 local ts_queries = require("nvim-treesitter.query")
 local utils = require("winbar.utils")
-
 local M = {}
 
 -- Default configuration that can be overridden by users
@@ -272,7 +271,11 @@ function M.setup(user_config)
 	user_config = user_config or {}
 	default_config.separator = user_config.separator or default_config.separator
 	default_config.disable_icons = user_config.disable_icons or default_config.disable_icons
+	default_config.icons = user_config.icons or default_config.icons
 	default_config.icons = vim.tbl_extend("force", default_config.icons, user_config["icons"] or {})
+	-- if not utils.isempty(user_config.icons) then
+	-- 	default_config.icons = user_config.icons
+	-- end
 	setup_language_configs()
 	default_config.depth = user_config.depth or default_config.depth
 	default_config.depth_limit_indicator = user_config.depth_limit_indicator or default_config.depth_limit_indicator

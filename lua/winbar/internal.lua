@@ -4,14 +4,14 @@ local M = {}
 
 -- TreeSitter module setup
 function M.init()
-	require("nvim-treesitter").define_modules {
+	require("nvim-treesitter").define_modules({
 		nvimGPS = {
-			module_path = "nvim-gps.internal",
+			module_path = "winbar.internal",
 			is_supported = function(lang)
 				return ts_queries.get_query(lang, "nvimGPS") ~= nil
-			end
-		}
-	}
+			end,
+		},
+	})
 end
 
 function M.attach(bufnr, lang)

@@ -1,5 +1,5 @@
 local utils = require("winbar.utils")
-local gps = require("winbar.gps")
+local icons = require("winbar.icons")
 
 M = {}
 
@@ -18,6 +18,16 @@ M.winbar_filetype_exclude = {
 	"toggleterm",
 	"neo-tree",
 }
+
+local config = {
+	separator = "",
+}
+
+function M.setup(user_config)
+	if not utils.isempty(user_config) then
+		config.separator = user_config.separator
+	end
+end
 
 local get_filename = function()
 	local filename = vim.fn.expand("%:t")
@@ -39,19 +49,23 @@ local get_filename = function()
 end
 
 local get_gps = function()
-	local status_ok, gps_location = pcall(gps.get_location, {})
+	local status_ok, gps = pcall(require, "winbar.gps")
 	if not status_ok then
+		return ""
+	end
+
+	local status_location_ok, gps_location = pcall(gps.get_location, {})
+	if not status_location_ok then
 		return ""
 	end
 
 	if not gps.is_available() or gps_location == "error" then
 		return ""
 	end
-
-	if not utils.isempty(gps_location) then
-		return ">" .. " " .. gps_location
-	else
+	if utils.isempty(gps_location) then
 		return ""
+	else
+		return config.separator .. " " .. gps.get_location()
 	end
 end
 
@@ -79,7 +93,7 @@ M.get_winbar = function()
 	end
 
 	if not utils.isempty(value) and utils.get_buf_option("mod") then
-		local mod = "%#LineNr#" .. "" .. "%*"
+		local mod = "%#LineNr#" .. "●" .. "%*"
 		if gps_added then
 			value = value .. " " .. mod
 		else
