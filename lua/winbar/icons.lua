@@ -203,6 +203,7 @@ else
 		misc = {
 			Robot = " ",
 			Squirrel = " ",
+			-- Tag = " ",
 			Tag = "",
 			Watch = " ",
 		},

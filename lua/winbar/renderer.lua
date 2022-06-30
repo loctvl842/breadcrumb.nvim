@@ -65,7 +65,7 @@ local get_gps = function()
 	if utils.isempty(gps_location) then
 		return ""
 	else
-		return config.separator .. " " .. gps.get_location()
+		return config.separator .. " " .. gps_location
 	end
 end
 
@@ -87,6 +87,7 @@ M.get_winbar = function()
 	if not utils.isempty(value) then
 		local gps_value = get_gps()
 		value = value .. " " .. gps_value
+		os.execute("dunstify " .. gps_value)
 		if not utils.isempty(gps_value) then
 			gps_added = true
 		end

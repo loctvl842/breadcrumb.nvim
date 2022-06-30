@@ -44,8 +44,8 @@ local function setup_language_configs()
 	configs = {
 		["javascript"] = with_default_config({
 			icons = {
-				["array-name"] = " ",
-				["object-name"] = " ",
+				["array-name"] = "%#CmpItemKindProperty#" .. " " .. "%*",
+				["object-name"] = "%#CCCCCC#" .. " " .. "%*",
 			},
 		}),
 		["json"] = with_default_config({

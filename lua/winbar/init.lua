@@ -43,7 +43,7 @@ local default_config = {
 function M.setup(user_config)
 	local gps_config = {}
 	local renderer_config = {
-		separator = user_config.separator or default_config.separator,
+		separator = "%#WinbarSeparator#" .. (user_config.separator or default_config.separator) .. "%*",
 	}
 	gps_config.icons = default_config.icons
 
@@ -55,7 +55,7 @@ function M.setup(user_config)
 		end
 	end
 
-	gps_config.separator = " " .. (user_config.separator or default_config.separator) .. " "
+	gps_config.separator = " %#WinbarSeparator#" .. (user_config.separator or default_config.separator) .. "%* "
 	gps_config.depth = user_config.depth or default_config.depth
 	gps_config.text_hl = "LineNr"
 	gps.setup(gps_config)
