@@ -18,6 +18,7 @@ local default_config = {
 	separator = " > ",
 	depth = 0,
 	depth_limit_indicator = "..",
+	highlight = "LineNr",
 }
 
 -- Languages specific default configuration must be added to configs
@@ -279,6 +280,7 @@ function M.setup(user_config)
 	setup_language_configs()
 	default_config.depth = user_config.depth or default_config.depth
 	default_config.depth_limit_indicator = user_config.depth_limit_indicator or default_config.depth_limit_indicator
+	default_config.highlight = user_config.highlight or default_config.highlight
 
 	-- Override languages specific configurations with user definitions
 	for lang, values in pairs(user_config.languages or {}) do
@@ -429,20 +431,24 @@ function M.get_location(opts)
 	local separator = config.separator
 	local disable_icons = config.disable_icons
 	local depth_limit_indicator = config.depth_limit_indicator
+	local highlight = config.highlight
 
 	if opts ~= nil then
 		depth = opts.depth or config.depth
 		separator = opts.separator or config.separator
 		disable_icons = opts.disable_icons or config.disable_icons
 		depth_limit_indicator = opts.depth_limit_indicator or config.depth_limit_indicator
+		highlight = opts.highlight or config.highlight
+		-- os.execute("dunstify " .. opts.highlight)
 	end
 
 	local context = {}
 	for _, v in pairs(data) do
 		if not disable_icons then
-			table.insert(context, v.icon .. v.text)
+			-- TODO: Add highlight feature here
+			table.insert(context, v.icon .. "%#" .. highlight .. "#" .. v.text .. "%*")
 		else
-			table.insert(context, v.text)
+			table.insert(context, "%#" .. highlight .. "#" .. v.text .. "%*")
 		end
 	end
 

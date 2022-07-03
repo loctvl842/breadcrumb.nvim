@@ -1,5 +1,4 @@
 local utils = require("winbar.utils")
-local icons = require("winbar.icons")
 
 M = {}
 
@@ -30,8 +29,18 @@ function M.setup(user_config)
 end
 
 local get_filename = function()
+	local root = vim.fn.expand("%:h")
 	local filename = vim.fn.expand("%:t")
 	local extension = vim.fn.expand("%:e")
+	local value = " "
+
+	if not utils.isempty(root) and root ~= "." then
+		local root_parts = utils.split(root, "/")
+		for _, rp in ipairs(root_parts) do
+			rp = "%#LineNr#" .. rp .. "%*"
+			value = value .. rp .. " " .. config.separator .. " "
+		end
+	end
 
 	if not utils.isempty(filename) then
 		local file_icon, file_icon_color = require("dev-icons").get_icon_color(filename, extension, { default = true })
@@ -44,8 +53,9 @@ local get_filename = function()
 			file_icon_color = ""
 		end
 
-		return " " .. "%#" .. hl_group .. "#" .. file_icon .. "%*" .. " " .. "%#LineNr#" .. filename .. "%*"
+		value = value .. "%#" .. hl_group .. "#" .. file_icon .. "%*" .. " " .. "%#LineNr#" .. filename .. "%*"
 	end
+	return value
 end
 
 local get_gps = function()
@@ -87,7 +97,6 @@ M.get_winbar = function()
 	if not utils.isempty(value) then
 		local gps_value = get_gps()
 		value = value .. " " .. gps_value
-		os.execute("dunstify " .. gps_value)
 		if not utils.isempty(gps_value) then
 			gps_added = true
 		end

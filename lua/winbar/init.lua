@@ -38,6 +38,7 @@ local default_config = {
 	separator = icons.ui.ChevronRight,
 	depth = 0,
 	depth_limit_indicator = "..",
+	highlight = "LineNr",
 }
 
 function M.setup(user_config)
@@ -57,7 +58,7 @@ function M.setup(user_config)
 
 	gps_config.separator = " %#WinbarSeparator#" .. (user_config.separator or default_config.separator) .. "%* "
 	gps_config.depth = user_config.depth or default_config.depth
-	gps_config.text_hl = "LineNr"
+	gps_config.highlight = user_config.highlight or default_config.highlight
 	gps.setup(gps_config)
 	redenrer.setup(renderer_config)
 end
