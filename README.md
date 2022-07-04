@@ -20,5 +20,10 @@ winbar.setup({
 	depth = 0,
 	-- indicator used when context hits depth limit
 	depth_limit_indicator = "..",
+	highlight = {
+		component = "LineNr",
+		separator = "LineNr",
+	},
+})
 })
 ```

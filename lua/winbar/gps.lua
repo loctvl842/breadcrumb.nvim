@@ -18,7 +18,10 @@ local default_config = {
 	separator = " > ",
 	depth = 0,
 	depth_limit_indicator = "..",
-	highlight = "LineNr",
+	highlight = {
+		component = "LineNr",
+		separator = "LineNr",
+	},
 }
 
 -- Languages specific default configuration must be added to configs
@@ -281,6 +284,14 @@ function M.setup(user_config)
 	default_config.depth = user_config.depth or default_config.depth
 	default_config.depth_limit_indicator = user_config.depth_limit_indicator or default_config.depth_limit_indicator
 	default_config.highlight = user_config.highlight or default_config.highlight
+	if not utils.isempty(user_config) and not utils.isempty(user_config.highlight) then
+		local default_highlight = default_config.highlight
+		local user_highlight = user_config.highlight
+		default_config.highlight = {
+			component = user_highlight.component or default_highlight.component,
+			separator = user_highlight.separator or default_highlight.separator,
+		}
+	end
 
 	-- Override languages specific configurations with user definitions
 	for lang, values in pairs(user_config.languages or {}) do
@@ -439,16 +450,22 @@ function M.get_location(opts)
 		disable_icons = opts.disable_icons or config.disable_icons
 		depth_limit_indicator = opts.depth_limit_indicator or config.depth_limit_indicator
 		highlight = opts.highlight or config.highlight
-		-- os.execute("dunstify " .. opts.highlight)
+		if not utils.isempty(opts.highlight) then
+			local opts_highlight = opts.highlight
+			local config_highlight = config.highlight
+			highlight = {
+				component = opts_highlight.component or config_highlight.component,
+				separator = opts_highlight.separator or config_highlight.separator,
+			}
+		end
 	end
 
 	local context = {}
 	for _, v in pairs(data) do
 		if not disable_icons then
-			-- TODO: Add highlight feature here
-			table.insert(context, v.icon .. "%#" .. highlight .. "#" .. v.text .. "%*")
+			table.insert(context, v.icon .. "%#" .. highlight.component .. "#" .. v.text .. "%*")
 		else
-			table.insert(context, "%#" .. highlight .. "#" .. v.text .. "%*")
+			table.insert(context, "%#" .. highlight.component .. "#" .. v.text .. "%*")
 		end
 	end
 
@@ -457,7 +474,8 @@ function M.get_location(opts)
 		table.insert(context, 1, depth_limit_indicator)
 	end
 
-	context = table.concat(context, separator)
+	local hl_separator = " %#" .. highlight.separator .. "#" .. separator .. "%* "
+	context = table.concat(context, hl_separator)
 
 	location_cache_value = context
 	return location_cache_value

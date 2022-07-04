@@ -38,14 +38,19 @@ local default_config = {
 	separator = icons.ui.ChevronRight,
 	depth = 0,
 	depth_limit_indicator = "..",
-	highlight = "LineNr",
+	highlight = {
+		component = "BufferFill",
+		separator = "BufferFill",
+	},
 }
 
 function M.setup(user_config)
 	local gps_config = {}
-	local renderer_config = {
-		separator = "%#WinbarSeparator#" .. (user_config.separator or default_config.separator) .. "%*",
-	}
+	local renderer_config = {}
+
+	renderer_config.separator = user_config.separator or default_config.separator
+	renderer_config.highlight = user_config.highlight or default_config.highlight
+
 	gps_config.icons = default_config.icons
 
 	if not (utils.isempty(user_config) or utils.isempty(user_config.icons)) then
@@ -56,9 +61,19 @@ function M.setup(user_config)
 		end
 	end
 
-	gps_config.separator = " %#WinbarSeparator#" .. (user_config.separator or default_config.separator) .. "%* "
+	gps_config.separator = user_config.separator or default_config.separator
 	gps_config.depth = user_config.depth or default_config.depth
 	gps_config.highlight = user_config.highlight or default_config.highlight
+	if not utils.isempty(user_config.highlight) then
+		gps_config.highlight = {
+			component = user_config.highlight.component or default_config.highlight.component,
+			separator = user_config.highlight.separator or default_config.highlight.separator,
+		}
+		renderer_config.highlight = {
+			component = user_config.highlight.component or default_config.highlight.component,
+			separator = user_config.highlight.separator or default_config.highlight.separator,
+		}
+	end
 	gps.setup(gps_config)
 	redenrer.setup(renderer_config)
 end

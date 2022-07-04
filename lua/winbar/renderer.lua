@@ -1,4 +1,5 @@
 local utils = require("winbar.utils")
+local icons = require("winbar.icons")
 
 M = {}
 
@@ -18,13 +19,26 @@ M.winbar_filetype_exclude = {
 	"neo-tree",
 }
 
-local config = {
-	separator = "",
+local config = {}
+
+local default_config = {
+	separator = icons.ui.ChevronRight,
+	highlight = {
+		component = "LineNr",
+		separator = "LineNr",
+	},
 }
 
 function M.setup(user_config)
 	if not utils.isempty(user_config) then
-		config.separator = user_config.separator
+		config.separator = user_config.separator or user_config.separator
+		config.highlight = default_config.highlight
+		if not utils.isempty(user_config.highlight) then
+			local user_highlight = user_config.highlight
+			local default_highlight = default_config.highlight
+			config.highlight.component = user_highlight.component or default_highlight.component
+			config.highlight.separator = user_highlight.separator or default_highlight.separator
+		end
 	end
 end
 
@@ -37,8 +51,9 @@ local get_filename = function()
 	if not utils.isempty(root) and root ~= "." then
 		local root_parts = utils.split(root, "/")
 		for _, rp in ipairs(root_parts) do
-			rp = "%#LineNr#" .. rp .. "%*"
-			value = value .. rp .. " " .. config.separator .. " "
+			local hl_separator = "%#" .. config.highlight.separator .. "#" .. config.separator .. "%*"
+			local hl_rp = "%#" .. config.highlight.component .. "#" .. rp .. "%*"
+			value = value .. hl_rp .. " " .. hl_separator .. " "
 		end
 	end
 
@@ -52,8 +67,9 @@ local get_filename = function()
 			file_icon = ""
 			file_icon_color = ""
 		end
-
-		value = value .. "%#" .. hl_group .. "#" .. file_icon .. "%*" .. " " .. "%#LineNr#" .. filename .. "%*"
+		local hl_icon = "%#" .. hl_group .. "#" .. file_icon .. "%*"
+		local hl_filename = "%#" .. config.highlight.component .. "#" .. filename .. "%*"
+		value = value .. hl_icon .. " " .. hl_filename
 	end
 	return value
 end
@@ -75,7 +91,8 @@ local get_gps = function()
 	if utils.isempty(gps_location) then
 		return ""
 	else
-		return config.separator .. " " .. gps_location
+		local hl_separator = "%#" .. config.highlight.separator .. "#" .. config.separator .. "%*"
+		return hl_separator .. " " .. gps_location
 	end
 end
 
