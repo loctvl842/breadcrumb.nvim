@@ -1,6 +1,6 @@
 ## INSTALLATION
 ```lua
-use("loctvl842/winbar")
+use({"loctvl842/winbar", requires = {"loctvl842/dev-icons})
 ```
 
 ## CONFIGURATION
