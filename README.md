@@ -25,5 +25,4 @@ winbar.setup({
 		separator = "LineNr",
 	},
 })
-})
 ```
