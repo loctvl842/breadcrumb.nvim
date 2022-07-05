@@ -11,7 +11,7 @@ local M = {}
 
 local default_config = {
 	disable_icons = false, -- Setting it to true will disable all icons
-
+	disabled_filetype = {},
 	icons = {
 		["class-name"] = "%#CmpItemKindClass#" .. icons.kind.Class .. "%*" .. space, -- Classes and class-like objects
 		["function-name"] = "%#CmpItemKindFunction#" .. icons.kind.Function .. "%*" .. space, -- Functions
@@ -50,6 +50,7 @@ function M.setup(user_config)
 
 	renderer_config.separator = user_config.separator or default_config.separator
 	renderer_config.highlight = user_config.highlight or default_config.highlight
+	renderer_config.disabled_filetype = user_config.disabled_filetype or default_config.disabled_filetype
 
 	gps_config.icons = default_config.icons
 

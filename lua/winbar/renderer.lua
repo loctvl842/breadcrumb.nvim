@@ -3,25 +3,13 @@ local icons = require("winbar.icons")
 
 M = {}
 
-M.winbar_filetype_exclude = {
-	"help",
-	"startify",
-	"dashboard",
-	"packer",
-	"neogitstatus",
-	"NvimTree",
-	"Trouble",
-	"alpha",
-	"lir",
-	"Outline",
-	"spectre_panel",
-	"toggleterm",
-	"neo-tree",
-}
-
 local config = {}
 
 local default_config = {
+	disabled_filetype = {
+		"",
+		"help",
+	},
 	separator = icons.ui.ChevronRight,
 	highlight = {
 		component = "LineNr",
@@ -33,6 +21,13 @@ function M.setup(user_config)
 	if not utils.isempty(user_config) then
 		config.separator = user_config.separator or user_config.separator
 		config.highlight = default_config.highlight
+		config.disabled_filetype = default_config.disabled_filetype
+		if not utils.isempty(user_config.disabled_filetype) then
+			for _, db_ft in ipairs(user_config.disabled_filetype) do
+				table.insert(config.disabled_filetype, db_ft)
+			end
+		end
+
 		if not utils.isempty(user_config.highlight) then
 			local user_highlight = user_config.highlight
 			local default_highlight = default_config.highlight
@@ -97,7 +92,7 @@ local get_gps = function()
 end
 
 local excludes = function()
-	if vim.tbl_contains(M.winbar_filetype_exclude, vim.bo.filetype) then
+	if vim.tbl_contains(config.disabled_filetype, vim.bo.filetype) then
 		vim.opt_local.winbar = nil
 		return true
 	end
