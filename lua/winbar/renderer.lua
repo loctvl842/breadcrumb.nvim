@@ -115,7 +115,7 @@ M.get_winbar = function()
 	end
 
 	if not utils.isempty(value) and utils.get_buf_option("mod") then
-		local mod = "%#LineNr#" .. "●" .. "%*"
+		local mod = "%#".. config.highlight.component .."#" .. "●" .. "%*"
 		if gps_added then
 			value = value .. " " .. mod
 		else

@@ -280,10 +280,10 @@ function M.setup(user_config)
 	-- if not utils.isempty(user_config.icons) then
 	-- 	default_config.icons = user_config.icons
 	-- end
-	setup_language_configs()
 	default_config.depth = user_config.depth or default_config.depth
 	default_config.depth_limit_indicator = user_config.depth_limit_indicator or default_config.depth_limit_indicator
 	default_config.highlight = user_config.highlight or default_config.highlight
+	setup_language_configs()
 	if not utils.isempty(user_config) and not utils.isempty(user_config.highlight) then
 		local default_highlight = default_config.highlight
 		local user_highlight = user_config.highlight
@@ -345,6 +345,7 @@ function M.get_data()
 	local gps_query = ts_queries.get_query(filelang, "nvimGPS")
 	local transform = transform_lang[filelang]
 	local config = configs[filelang]
+  os.execute('dunstify ' .. config.highlight.component)
 
 	if not gps_query then
 		return nil
