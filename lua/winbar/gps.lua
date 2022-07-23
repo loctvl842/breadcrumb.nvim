@@ -345,7 +345,6 @@ function M.get_data()
 	local gps_query = ts_queries.get_query(filelang, "nvimGPS")
 	local transform = transform_lang[filelang]
 	local config = configs[filelang]
-  os.execute('dunstify ' .. config.highlight.component)
 
 	if not gps_query then
 		return nil
