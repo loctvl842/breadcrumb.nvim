@@ -50,6 +50,7 @@ local function setup_language_configs()
 			icons = {
 				["array-name"] = "%#CmpItemKindProperty#" .. " " .. "%*",
 				["object-name"] = "%#CCCCCC#" .. " " .. "%*",
+        ["method_name"] = " ",
 			},
 		}),
 		["json"] = with_default_config({
@@ -120,7 +121,7 @@ local function setup_language_configs()
 		["scss"] = with_default_config({
 			icons = {
 				["scss-name"] = "",
-				["scss-mixin-name"] = "@mixin ",
+				["scss-mixin-name"] = " ",
 				["scss-include-name"] = "@include ",
 				["scss-keyframes-name"] = "@keyframes ",
 			},

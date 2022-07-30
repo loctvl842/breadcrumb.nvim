@@ -38,7 +38,15 @@ function M.setup(user_config)
 end
 
 local get_filename = function()
+  local cwd = vim.fn.getcwd()
+  local project_dir = vim.split(cwd, "/")
+  local project_name= project_dir[#project_dir]
+  project_name = string.gsub(project_name, "-", "%%-")
 	local root = vim.fn.expand("%:h")
+  local i, j = string.find(root, project_name)
+  if not utils.isempty(i) then
+    root = string.sub(root, i)
+  end
 	local filename = vim.fn.expand("%:t")
 	local extension = vim.fn.expand("%:e")
 	local value = " "
