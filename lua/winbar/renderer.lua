@@ -101,7 +101,6 @@ end
 
 local excludes = function()
 	if vim.tbl_contains(config.disabled_filetype, vim.bo.filetype) then
-		vim.opt_local.winbar = ""
 		return true
 	end
 	return false
