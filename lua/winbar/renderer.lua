@@ -86,6 +86,9 @@ end
 
 local excludes = function()
 	if vim.tbl_contains(config.disabled_filetype, vim.bo.filetype) then
+		if vim.bo.filetype ~= "neo-tree" then
+			vim.api.nvim_set_option_value("winbar", nil, { scope = "local" })
+		end
 		return true
 	end
 	return false
@@ -93,7 +96,6 @@ end
 
 M.get_winbar = function()
 	if excludes() then
-		vim.api.nvim_set_option_value("winbar", nil, { scope = "local" })
 		return
 	end
 	local value = get_filename()
