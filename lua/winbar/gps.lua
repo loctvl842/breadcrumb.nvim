@@ -1,485 +1,606 @@
-local ts_utils = require("nvim-treesitter.ts_utils")
-local ts_parsers = require("nvim-treesitter.parsers")
-local ts_queries = require("nvim-treesitter.query")
-local utils = require("winbar.utils")
 local M = {}
 
--- Default configuration that can be overridden by users
-local default_config = {
-	enabled = true,
-	disable_icons = false,
-	icons = {
-		["class-name"] = " ",
-		["function-name"] = " ",
-		["method-name"] = " ",
-		["container-name"] = "ﮅ ",
-		["tag-name"] = "炙",
-	},
-	separator = " > ",
-	depth = 0,
-	depth_limit_indicator = "..",
-	highlight = {
-		component = "LineNr",
-		separator = "LineNr",
-	},
-}
+-- @Private Methods
 
--- Languages specific default configuration must be added to configs
--- using the `with_default_config` helper.
--- In setup_language_configs function
---
--- Example
---
---    configs = {
---        ["cpp"] = with_default_config({
---            icons = {
---                ["function-name"] = "<F> "
---            }
---        })
---    }
-local with_default_config = function(config)
-	return vim.tbl_deep_extend("force", default_config, config)
-end
-
--- Placeholder where the configuration will be saved in setup()
-local configs = {}
-
-local function setup_language_configs()
-	configs = {
-		["javascript"] = with_default_config({
-			icons = {
-				["array-name"] = "%#CmpItemKindProperty#" .. " " .. "%*",
-				["object-name"] = "%#CCCCCC#" .. " " .. "%*",
-        ["method_name"] = " ",
-			},
-		}),
-		["json"] = with_default_config({
-			icons = {
-				["array-name"] = " ",
-				["object-name"] = " ",
-				["null-name"] = "[] ",
-				["boolean-name"] = "ﰰﰴ ",
-				["number-name"] = "# ",
-				["string-name"] = " ",
-			},
-		}),
-		["latex"] = with_default_config({
-			icons = {
-				["title-name"] = "# ",
-				["label-name"] = " ",
-			},
-		}),
-		["norg"] = with_default_config({
-			icons = {
-				["title-name"] = " ",
-			},
-		}),
-		["toml"] = with_default_config({
-			icons = {
-				["table-name"] = " ",
-				["array-name"] = " ",
-				["boolean-name"] = "ﰰﰴ ",
-				["date-name"] = " ",
-				["date-time-name"] = " ",
-				["float-name"] = " ",
-				["inline-table-name"] = " ",
-				["integer-name"] = "# ",
-				["string-name"] = " ",
-				["time-name"] = " ",
-			},
-		}),
-		["verilog"] = with_default_config({
-			icons = {
-				["module-name"] = " ",
-			},
-		}),
-		["yaml"] = with_default_config({
-			icons = {
-				["mapping-name"] = " ",
-				["sequence-name"] = " ",
-				["null-name"] = "[] ",
-				["boolean-name"] = "ﰰﰴ ",
-				["integer-name"] = "# ",
-				["float-name"] = " ",
-				["string-name"] = " ",
-			},
-		}),
-		["yang"] = with_default_config({
-			icons = {
-				["module-name"] = " ",
-				["augment-path"] = " ",
-				["container-name"] = " ",
-				["grouping-name"] = " ",
-				["typedef-name"] = " ",
-				["identity-name"] = " ",
-				["list-name"] = "﬘ ",
-				["leaf-list-name"] = " ",
-				["leaf-name"] = " ",
-				["action-name"] = " ",
-			},
-		}),
-		["scss"] = with_default_config({
-			icons = {
-				["scss-name"] = "",
-				["scss-mixin-name"] = " ",
-				["scss-include-name"] = "@include ",
-				["scss-keyframes-name"] = "@keyframes ",
-			},
-		}),
-		["tsx"] = with_default_config({
-			icons = {
-				["hook-name"] = "ﯠ ",
-			},
-		}),
-	}
-end
-
-local data_cache_value = nil -- table
-local location_cache_value = "" -- string
-local data_prev_loc = { 0, 0 }
-local location_prev_loc = { 0, 0 }
-local setup_complete = false
-
-local function default_transform(config, capture_name, capture_text)
-	return {
-		text = capture_text,
-		type = capture_name,
-		icon = config.icons[capture_name],
-	}
-end
-
-local transform_lang = {
-	["cpp"] = function(config, capture_name, capture_text)
-		if capture_name == "multi-class-method" then
-			local temp = vim.split(capture_text, "%:%:")
-			local ret = {}
-			for i = 1, #temp - 1 do
-				local text = string.match(temp[i], "%s*([%w_]*)%s*<?.*>?%s*")
-				table.insert(ret, default_transform(config, "class-name", text))
-			end
-			table.insert(
-				ret,
-				default_transform(config, "method-name", string.match(temp[#temp], "%s*(~?%s*[%w_]*)%s*"))
-			)
-			return ret
-		elseif capture_name == "multi-class-class" then
-			local temp = vim.split(capture_text, "%:%:")
-			local ret = {}
-			for i = 1, #temp - 1 do
-				local text = string.match(temp[i], "%s*([%w_]*)%s*<?.*>?%s*")
-				table.insert(ret, default_transform(config, "class-name", text))
-			end
-			table.insert(
-				ret,
-				default_transform(config, "class-name", string.match(temp[#temp], "%s*([%w_]*)%s*<?.*>?%s*"))
-			)
-			return ret
-		else
-			return default_transform(config, capture_name, capture_text)
-		end
-	end,
-	["html"] = function(config, capture_name, capture_text)
-		if capture_name == "tag-name" then
-			local text = string.match(capture_text, "<(.*)>")
-			local tag_name, attributes = string.match(text, "([%w-]+)(.*)")
-			local ret = tag_name
-			local id_name = string.match(attributes, 'id%s*=%s*%"([^%s]+)%"')
-			if id_name ~= nil then
-				ret = ret .. "#" .. id_name
-			else
-				local class_name = string.match(attributes, 'class%s*=%s*%"([%w-_%s]+)%"')
-				if class_name ~= nil then
-					ret = ret .. "." .. string.match(class_name, "(%w+)")
+-- Make request to lsp server
+local function request_symbol(for_buf, handler, client_id)
+	vim.lsp.buf_request_all(
+		for_buf,
+		"textDocument/documentSymbol",
+		{ textDocument = vim.lsp.util.make_text_document_params() },
+		function(symbols)
+			if symbols[client_id] == nil then
+				return
+			elseif symbols[client_id].error then
+				vim.defer_fn(function()
+					request_symbol(for_buf, handler, client_id)
+				end, 750)
+			elseif symbols[client_id].result ~= nil then
+				if vim.api.nvim_buf_is_valid(for_buf) then
+					vim.b[for_buf].navic_awaiting_lsp_response = false
+					handler(for_buf, symbols[client_id].result)
 				end
 			end
-			return default_transform(config, "tag-name", ret)
 		end
-	end,
-	["haskell"] = function(config, capture_name, capture_text)
-		if capture_name == "operator-name" then
-			return default_transform(config, "function-name", ("(" .. capture_text .. ")"))
-		else
-			return default_transform(config, capture_name, capture_text)
-		end
-	end,
+	)
+end
 
-	["lua"] = function(config, capture_name, capture_text)
-		if capture_name == "string-method" then
-			return default_transform(config, "method-name", string.match(capture_text, "[\"'](.*)[\"']"))
-		elseif capture_name == "multi-container" then
-			local temp = vim.split(capture_text, "%.")
-			local ret = {}
-			for i = 1, #temp do
-				table.insert(ret, default_transform(config, "container-name", temp[i]))
+-- relation of 'other' with repect to 'symbol'
+local function symbol_relation(symbol, other)
+	local s = symbol.scope
+	local o = other.scope
+
+	if
+		o["end"].line < s["start"].line
+		or (o["end"].line == s["start"].line and o["end"].character <= s["start"].character)
+	then
+		return "before"
+	end
+
+	if
+		o["start"].line > s["end"].line
+		or (o["start"].line == s["end"].line and o["start"].character >= s["end"].character)
+	then
+		return "after"
+	end
+
+	if
+		(
+			o["start"].line < s["start"].line
+			or (o["start"].line == s["start"].line and o["start"].character <= s["start"].character)
+		)
+		and (
+			o["end"].line > s["end"].line
+			or (o["end"].line == s["end"].line and o["end"].character >= s["end"].character)
+		)
+	then
+		return "around"
+	end
+
+	return "within"
+end
+
+-- Construct tree structure based on scope information
+-- Could be inaccurate ?? Not intended to be used like this...
+local function symbolInfo_treemaker(symbols)
+	-- convert location to scope
+	for _, node in ipairs(symbols) do
+		node.scope = node.location.range
+		node.scope["start"].line = node.scope["start"].line + 1
+		node.scope["end"].line = node.scope["end"].line + 1
+		node.location = nil
+	end
+
+	-- sort with repect to node height and location
+	-- nodes closer to root node come before others
+	-- nodes and same level are arranged according to scope
+	table.sort(symbols, function(a, b)
+		local loc = symbol_relation(a, b)
+		if loc == "after" or loc == "within" then
+			return true
+		end
+		return false
+	end)
+
+	-- root node
+	local tree = {
+		scope = {
+			start = {
+				line = -10,
+				character = 0,
+			},
+			["end"] = {
+				line = 2147483640,
+				character = 0,
+			},
+		},
+		children = {},
+	}
+	local stack = {}
+
+	table.insert(tree.children, symbols[1])
+	table.insert(stack, tree)
+
+	-- build tree
+	for i = 2, #symbols, 1 do
+		local prev_chain_node_relation = symbol_relation(symbols[i], symbols[i - 1])
+		local stack_top_node_relation = symbol_relation(symbols[i], stack[#stack])
+
+		if prev_chain_node_relation == "around" then
+			-- current node is child node of previous chain node
+			table.insert(stack, symbols[i - 1])
+			if not symbols[i - 1].children then
+				symbols[i - 1].children = {}
 			end
-			return ret
-		elseif capture_name == "table-function" then
-			local temp = vim.split(capture_text, "%.")
-			local ret = {}
-			for i = 1, #temp - 1 do
-				table.insert(ret, default_transform(config, "container-name", temp[i]))
+			table.insert(symbols[i - 1].children, symbols[i])
+		elseif prev_chain_node_relation == "before" and stack_top_node_relation == "around" then
+			-- the previous symbol comes before this one and the current node
+			-- contains this symbol; add this symbol as a child of the current node
+			table.insert(stack[#stack].children, symbols[i])
+		elseif stack_top_node_relation == "before" then
+			-- the current node comes before this symbol; pop nodes off the stack to
+			-- find the parent of this symbol and add this symbol as its child
+			while symbol_relation(symbols[i], stack[#stack]) ~= "around" do
+				stack[#stack] = nil
 			end
-			table.insert(ret, default_transform(config, "function-name", temp[#temp]))
-			return ret
-		else
-			return default_transform(config, capture_name, capture_text)
+			table.insert(stack[#stack].children, symbols[i])
 		end
-	end,
-	["python"] = function(config, capture_name, capture_text)
-		if capture_name == "main-function" then
-			return default_transform(config, "function-name", "main")
-		else
-			return default_transform(config, capture_name, capture_text)
+	end
+
+	return tree.children
+end
+
+-- Process raw data from lsp server
+local function parse(symbols)
+	local parsed_symbols = {}
+
+	local function dfs(curr_symbol)
+		local ret = {}
+
+		for index, val in ipairs(curr_symbol) do
+			local curr_parsed_symbol = {}
+
+			local scope = val.range
+			scope["start"].line = scope["start"].line + 1
+			scope["end"].line = scope["end"].line + 1
+
+			curr_parsed_symbol = {
+				name = val.name or "<???>",
+				scope = scope,
+				kind = val.kind or 0,
+				index = index,
+			}
+
+			if val.children then
+				curr_parsed_symbol.children = dfs(val.children)
+			end
+
+			ret[#ret + 1] = curr_parsed_symbol
 		end
-	end,
-	["yang"] = function(config, capture_name, capture_text)
-		if capture_name == "keyword" then
-			return nil
-		else
-			return default_transform(config, capture_name, capture_text)
+
+		if ret then
+			table.sort(ret, function(a, b)
+				if b.scope.start.line == a.scope.start.line then
+					return b.scope.start.character > a.scope.start.character
+				end
+				return b.scope.start.line > a.scope.start.line
+			end)
 		end
-	end,
+
+		return ret
+	end
+
+	-- detect type
+	if #symbols >= 1 and symbols[1].range == nil then
+		parsed_symbols = symbolInfo_treemaker(symbols)
+	else
+		parsed_symbols = dfs(symbols)
+	end
+
+	return parsed_symbols
+end
+
+local navic_symbols = {}
+local navic_context_data = {}
+
+local function update_data(for_buf, symbols)
+	navic_symbols[for_buf] = parse(symbols)
+end
+
+local function in_range(cursor_pos, range)
+	-- -1 = behind
+	--  0 = in range
+	--  1 = ahead
+
+	local line = cursor_pos[1]
+	local char = cursor_pos[2]
+
+	if line < range["start"].line then
+		return -1
+	elseif line > range["end"].line then
+		return 1
+	end
+
+	if line == range["start"].line and char < range["start"].character then
+		return -1
+	elseif line == range["end"].line and char > range["end"].character then
+		return 1
+	end
+
+	return 0
+end
+
+local function update_context(for_buf)
+	local cursor_pos = vim.api.nvim_win_get_cursor(0)
+
+	if navic_context_data[for_buf] == nil then
+		navic_context_data[for_buf] = {}
+	end
+	local old_context_data = navic_context_data[for_buf]
+	local new_context_data = {}
+
+	local curr = navic_symbols[for_buf]
+
+	if curr == nil then
+		return
+	end
+
+	-- Find larger context that remained same
+	for _, context in ipairs(old_context_data) do
+		if curr == nil then
+			break
+		end
+		if
+			in_range(cursor_pos, context.scope) == 0
+			and curr[context.index] ~= nil
+			and context.name == curr[context.index].name
+			and context.kind == curr[context.index].kind
+		then
+			table.insert(new_context_data, curr[context.index])
+			curr = curr[context.index].children
+		else
+			break
+		end
+	end
+
+	-- Fill out context_data
+	while curr ~= nil do
+		local go_deeper = false
+		local l = 1
+		local h = #curr
+		while l <= h do
+			local m = bit.rshift(l + h, 1)
+			local comp = in_range(cursor_pos, curr[m].scope)
+			if comp == -1 then
+				h = m - 1
+			elseif comp == 1 then
+				l = m + 1
+			else
+				table.insert(new_context_data, curr[m])
+				curr = curr[m].children
+				go_deeper = true
+				break
+			end
+		end
+		if not go_deeper then
+			break
+		end
+	end
+
+	navic_context_data[for_buf] = new_context_data
+end
+
+-- stylua: ignore
+local lsp_str_to_num = {
+  File          = 1,
+  Module        = 2,
+  Namespace     = 3,
+  Package       = 4,
+  Class         = 5,
+  Method        = 6,
+  Property      = 7,
+  Field         = 8,
+  Constructor   = 9,
+  Enum          = 10,
+  Interface     = 11,
+  Function      = 12,
+  Variable      = 13,
+  Constant      = 14,
+  String        = 15,
+  Number        = 16,
+  Boolean       = 17,
+  Array         = 18,
+  Object        = 19,
+  Key           = 20,
+  Null          = 21,
+  EnumMember    = 22,
+  Struct        = 23,
+  Event         = 24,
+  Operator      = 25,
+  TypeParameter = 26,
 }
 
--- If a language doesn't have a transformation
--- fallback to the default_transform
-setmetatable(transform_lang, {
+-- stylua: ignore
+local lsp_num_to_str = {
+  [1]  = "File",
+  [2]  = "Module",
+  [3]  = "Namespace",
+  [4]  = "Package",
+  [5]  = "Class",
+  [6]  = "Method",
+  [7]  = "Property",
+  [8]  = "Field",
+  [9]  = "Constructor",
+  [10] = "Enum",
+  [11] = "Interface",
+  [12] = "Function",
+  [13] = "Variable",
+  [14] = "Constant",
+  [15] = "String",
+  [16] = "Number",
+  [17] = "Boolean",
+  [18] = "Array",
+  [19] = "Object",
+  [20] = "Key",
+  [21] = "Null",
+  [22] = "EnumMember",
+  [23] = "Struct",
+  [24] = "Event",
+  [25] = "Operator",
+  [26] = "TypeParameter",
+}
+
+local config = {
+	icons = {
+		[1] = " ", -- File
+		[2] = " ", -- Module
+		[3] = " ", -- Namespace
+		[4] = " ", -- Package
+		[5] = " ", -- Class
+		[6] = " ", -- Method
+		[7] = " ", -- Property
+		[8] = " ", -- Field
+		[9] = " ", -- Constructor
+		[10] = "練", -- Enum
+		[11] = "練", -- Interface
+		[12] = " ", -- Function
+		[13] = " ", -- Variable
+		[14] = " ", -- Constant
+		[15] = " ", -- String
+		[16] = " ", -- Number
+		[17] = "◩ ", -- Boolean
+		[18] = " ", -- Array
+		[19] = " ", -- Object
+		[20] = " ", -- Key
+		[21] = "ﳠ ", -- Null
+		[22] = " ", -- EnumMember
+		[23] = " ", -- Struct
+		[24] = " ", -- Event
+		[25] = " ", -- Operator
+		[26] = " ", -- TypeParameter
+		[255] = " ", -- Macro
+	},
+	highlight = true,
+	separator = ">",
+	depth_limit = 0,
+	depth_limit_indicator = "..",
+	safe_output = true,
+	highlight_group = {
+		component = "WinbarFg",
+		separator = "WinbarFg",
+	},
+}
+
+setmetatable(config.icons, {
 	__index = function()
-		return default_transform
+		return "? "
+	end,
+})
+setmetatable(lsp_num_to_str, {
+	__index = function()
+		return "Text"
 	end,
 })
 
--- Checks the availability of the plugin for the current buffer
--- The availability is cached in a buffer variable (b:nvim_gps_available)
-function M.is_available()
-	if setup_complete and vim.b.nvim_gps_available == nil then
-		local filelang = ts_parsers.ft_to_lang(vim.bo.filetype)
-		local config = configs[filelang]
+-- @Public Methods
 
-		if config.enabled then
-			local has_parser = ts_parsers.has_parser(filelang)
-			local has_query = ts_queries.has_query_files(filelang, "nvimGPS")
+function M.setup(opts)
+	if opts == nil then
+		return
+	end
 
-			vim.b.nvim_gps_available = has_parser and has_query
-		else
-			vim.b.nvim_gps_available = false
+	if opts.icons ~= nil then
+		for k, v in pairs(opts.icons) do
+			if lsp_str_to_num[k] then
+				config.icons[lsp_str_to_num[k]] = v
+			end
 		end
 	end
 
-	return vim.b.nvim_gps_available
+	if opts.separator ~= nil then
+		config.separator = opts.separator
+	end
+	if opts.depth_limit ~= nil then
+		config.depth_limit = opts.depth_limit
+	end
+	if opts.depth_limit_indicator ~= nil then
+		config.depth_limit_indicator = opts.depth_limit_indicator
+	end
+	if opts.highlight ~= nil then
+		config.highlight = opts.highlight
+	end
+	if opts.safe_output ~= nil then
+		config.safe_output = opts.safe_output
+	end
+	if opts.highlight_group ~= nil then
+		config.highlight_group = opts.highlight_group
+	end
 end
 
--- Enables the treesitter nvimGPS module and loads the user configuration, or fallback to the
--- default_config.
-function M.setup(user_config)
-	-- Override default configurations with user definitions
-	user_config = user_config or {}
-	default_config.separator = user_config.separator or default_config.separator
-	default_config.disable_icons = user_config.disable_icons or default_config.disable_icons
-	default_config.icons = user_config.icons or default_config.icons
-	default_config.icons = vim.tbl_extend("force", default_config.icons, user_config["icons"] or {})
-	-- if not utils.isempty(user_config.icons) then
-	-- 	default_config.icons = user_config.icons
-	-- end
-	default_config.depth = user_config.depth or default_config.depth
-	default_config.depth_limit_indicator = user_config.depth_limit_indicator or default_config.depth_limit_indicator
-	default_config.highlight = user_config.highlight or default_config.highlight
-	setup_language_configs()
-	if not utils.isempty(user_config) and not utils.isempty(user_config.highlight) then
-		local default_highlight = default_config.highlight
-		local user_highlight = user_config.highlight
-		default_config.highlight = {
-			component = user_highlight.component or default_highlight.component,
-			separator = user_highlight.separator or default_highlight.separator,
-		}
-	end
-
-	-- Override languages specific configurations with user definitions
-	for lang, values in pairs(user_config.languages or {}) do
-		if type(values) == "table" then
-			configs[lang] = with_default_config(values)
-		else
-			configs[lang] = with_default_config({ enabled = values })
-		end
-	end
-
-	-- If a language doesn't have a configuration, fallback to the default_config
-	setmetatable(configs, {
-		__index = function()
-			return default_config
-		end,
-	})
-
-	require("nvim-treesitter.configs").setup({
-		nvimGPS = {
-			enable = true,
-		},
-	})
-
-	setup_complete = true
-end
-
--- Request treesitter parser to update the syntax tree,
--- when the buffer content has changed.
-local update_tree = ts_utils.memoize_by_buf_tick(function(bufnr)
-	local filelang = ts_parsers.ft_to_lang(vim.api.nvim_buf_get_option(bufnr, "filetype"))
-	local parser = ts_parsers.get_parser(bufnr, filelang)
-	return parser:parse()
-end)
-
----@return table|nil  the data in table format, or nil if gps is not available
+-- returns table of context or nil
 function M.get_data()
-	-- Inserting text cause error nodes
-	if vim.api.nvim_get_mode().mode == "i" then
-		return data_cache_value
-	end
+	local context_data = navic_context_data[vim.api.nvim_get_current_buf()]
 
-	-- Avoid repeated calls on same cursor position
-	local curr_loc = vim.api.nvim_win_get_cursor(0)
-	if data_prev_loc[1] == curr_loc[1] and data_prev_loc[2] == curr_loc[2] then
-		return data_cache_value
-	end
-
-	data_prev_loc = vim.api.nvim_win_get_cursor(0)
-
-	local filelang = ts_parsers.ft_to_lang(vim.bo.filetype)
-	local gps_query = ts_queries.get_query(filelang, "nvimGPS")
-	local transform = transform_lang[filelang]
-	local config = configs[filelang]
-
-	if not gps_query then
+	if context_data == nil then
 		return nil
 	end
 
-	-- Request treesitter parser to update the syntax tree for the current buffer.
-	update_tree(vim.api.nvim_get_current_buf())
+	local ret = {}
 
-	local current_node = ts_utils.get_node_at_cursor()
-
-	local node_data = {}
-	local node = current_node
-
-	local function add_node_data(pos, capture_name, capture_node)
-		local text = ""
-
-		if vim.fn.has("nvim-0.7") > 0 then
-			text = vim.treesitter.query.get_node_text(capture_node, 0)
-			if text == nil then
-				return data_cache_value
-			end
-			text = string.gsub(text, "%s+", " ")
-		else
-			text = utils.get_node_text()
-			text = table.concat(text, " ")
-		end
-
-		local node_text = transform(config, capture_name, text)
-
-		if node_text ~= nil then
-			table.insert(node_data, pos, node_text)
-		end
+	for _, v in ipairs(context_data) do
+		table.insert(ret, {
+			kind = v.kind,
+			type = lsp_num_to_str[v.kind],
+			name = v.name,
+			icon = config.icons[v.kind],
+			scope = v.scope,
+		})
 	end
 
-	while node do
-		local iter = gps_query:iter_captures(node, 0)
-		local capture_ID, capture_node = iter()
-
-		if capture_node == node then
-			if gps_query.captures[capture_ID] == "scope-root" then
-				while capture_node == node do
-					capture_ID, capture_node = iter()
-				end
-				local capture_name = gps_query.captures[capture_ID]
-				add_node_data(1, capture_name, capture_node)
-			elseif gps_query.captures[capture_ID] == "scope-root-2" then
-				capture_ID, capture_node = iter()
-				local capture_name = gps_query.captures[capture_ID]
-				add_node_data(1, capture_name, capture_node)
-
-				capture_ID, capture_node = iter()
-				capture_name = gps_query.captures[capture_ID]
-				add_node_data(2, capture_name, capture_node)
-			end
-		end
-
-		node = node:parent()
-	end
-
-	local data = {}
-	for _, v in pairs(node_data) do
-		if not vim.tbl_islist(v) then
-			table.insert(data, v)
-		else
-			vim.list_extend(data, v)
-		end
-	end
-
-	data_cache_value = data
-	return data_cache_value
+	return ret
 end
 
----@return string|nil  the pretty statusline component, or nil if not available
+function M.is_available()
+	return vim.b.navic_client_id ~= nil
+end
+
 function M.get_location(opts)
-	if vim.api.nvim_get_mode().mode == "i" then
-		return location_cache_value
-	end
-
-	local curr_loc = vim.api.nvim_win_get_cursor(0)
-	if location_prev_loc[1] == curr_loc[1] and location_prev_loc[2] == curr_loc[2] then
-		return location_cache_value
-	end
-
-	location_prev_loc = vim.api.nvim_win_get_cursor(0)
-
-	local filelang = ts_parsers.ft_to_lang(vim.bo.filetype)
-	local config = configs[filelang]
-	local data = M.get_data()
-
-	if not data then
-		return nil
-	end
-
-	local depth = config.depth
-	local separator = config.separator
-	local disable_icons = config.disable_icons
-	local depth_limit_indicator = config.depth_limit_indicator
-	local highlight = config.highlight
+	local local_config = {}
 
 	if opts ~= nil then
-		depth = opts.depth or config.depth
-		separator = opts.separator or config.separator
-		disable_icons = opts.disable_icons or config.disable_icons
-		depth_limit_indicator = opts.depth_limit_indicator or config.depth_limit_indicator
-		highlight = opts.highlight or config.highlight
-		if not utils.isempty(opts.highlight) then
-			local opts_highlight = opts.highlight
-			local config_highlight = config.highlight
-			highlight = {
-				component = opts_highlight.component or config_highlight.component,
-				separator = opts_highlight.separator or config_highlight.separator,
-			}
+		local_config = vim.deepcopy(config)
+
+		if opts.icons ~= nil then
+			for k, v in pairs(opts.icons) do
+				if lsp_str_to_num[k] then
+					local_config.icons[lsp_str_to_num[k]] = v
+				end
+			end
 		end
+
+		if opts.separator ~= nil then
+			local_config.separator = opts.separator
+		end
+		if opts.depth_limit ~= nil then
+			local_config.depth_limit = opts.depth_limit
+		end
+		if opts.depth_limit_indicator ~= nil then
+			local_config.depth_limit_indicator = opts.depth_limit_indicator
+		end
+		if opts.highlight ~= nil then
+			local_config.highlight = opts.highlight
+		end
+		if opts.safe_output ~= nil then
+			local_config.safe_output = opts.safe_output
+		end
+	else
+		local_config = config
 	end
 
-	local context = {}
-	for _, v in pairs(data) do
-		if not disable_icons then
-			table.insert(context, v.icon .. "%#" .. highlight.component .. "#" .. v.text .. "%*")
+	local data = M.get_data()
+
+	if data == nil then
+		return ""
+	end
+
+	local location = {}
+
+	local function add_hl(kind, name)
+		return "%#WinbarIcons"
+			.. lsp_num_to_str[kind]
+			.. "#"
+			.. local_config.icons[kind]
+			.. "%*%#"
+			.. local_config.highlight_group.component
+			.. "#"
+			.. name
+			.. "%*"
+	end
+
+	for _, v in ipairs(data) do
+		local name = ""
+
+		if local_config.safe_output then
+			name = string.gsub(v.name, "%%", "%%%%")
+			name = string.gsub(name, "\n", " ")
 		else
-			table.insert(context, "%#" .. highlight.component .. "#" .. v.text .. "%*")
+			name = v.name
+		end
+
+		if local_config.highlight then
+			table.insert(location, add_hl(v.kind, name))
+		else
+			table.insert(location, v.icon .. name)
 		end
 	end
 
-	if depth ~= 0 and #context > depth then
-		context = vim.list_slice(context, #context - depth + 1, #context)
-		table.insert(context, 1, depth_limit_indicator)
+	if local_config.depth_limit ~= 0 and #location > local_config.depth_limit then
+		location = vim.list_slice(location, #location - local_config.depth_limit + 1, #location)
+		if local_config.highlight then
+			table.insert(location, 1, "%#WinbarBg#" .. local_config.depth_limit_indicator .. "%*")
+		else
+			table.insert(location, 1, local_config.depth_limit_indicator)
+		end
 	end
 
-	local hl_separator = " %#" .. highlight.separator .. "#" .. separator .. "%* "
-	context = table.concat(context, hl_separator)
+	local ret = ""
 
-	location_cache_value = context
-	return location_cache_value
+	if local_config.highlight then
+		ret = table.concat(
+			location,
+			" %#" .. local_config.highlight_group.separator .. "#" .. local_config.separator .. "%* "
+		)
+	else
+		ret = table.concat(location, local_config.separator)
+	end
+
+	return ret
+end
+
+function M.attach(client, bufnr)
+	if not client.server_capabilities.documentSymbolProvider then
+		if not vim.g.navic_silence then
+			vim.notify(
+				'nvim-navic: Server "' .. client.name .. '" does not support documentSymbols.',
+				vim.log.levels.ERROR
+			)
+		end
+		return
+	end
+
+	if vim.b.navic_client_id ~= nil and vim.b.navic_client_name ~= client.name then
+		local prev_client = vim.lsp.get_client_by_id(client.id)
+		if not vim.g.navic_silence then
+			vim.notify(
+				"nvim-navic: Failed to attach to "
+					.. client.name
+					.. " for current buffer. Already attached to "
+					.. prev_client.name,
+				vim.log.levels.WARN
+			)
+		end
+		return
+	end
+
+	vim.b.navic_client_id = client.id
+	vim.b.navic_client_name = client.name
+	local changedtick = 0
+
+	local navic_augroup = vim.api.nvim_create_augroup("navic", { clear = false })
+	vim.api.nvim_clear_autocmds({
+		buffer = bufnr,
+		group = navic_augroup,
+	})
+	vim.api.nvim_create_autocmd({ "InsertLeave", "BufEnter", "CursorHold" }, {
+		callback = function()
+			if not vim.b.navic_awaiting_lsp_response and changedtick < vim.b.changedtick then
+				vim.b.navic_awaiting_lsp_response = true
+				changedtick = vim.b.changedtick
+				request_symbol(bufnr, update_data, client.id)
+			end
+		end,
+		group = navic_augroup,
+		buffer = bufnr,
+	})
+	vim.api.nvim_create_autocmd({ "CursorHold", "CursorMoved" }, {
+		callback = function()
+			update_context(bufnr)
+		end,
+		group = navic_augroup,
+		buffer = bufnr,
+	})
+	vim.api.nvim_create_autocmd({ "BufDelete" }, {
+		callback = function()
+			navic_context_data[bufnr] = nil
+			navic_symbols[bufnr] = nil
+		end,
+		group = navic_augroup,
+		buffer = bufnr,
+	})
+
+	-- First call
+	vim.b.navic_awaiting_lsp_response = true
+	request_symbol(bufnr, update_data, client.id)
 end
 
 return M

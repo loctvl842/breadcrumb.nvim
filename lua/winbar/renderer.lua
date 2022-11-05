@@ -1,52 +1,33 @@
 local utils = require("winbar.utils")
-local icons = require("winbar.icons")
 
 M = {}
 
-local config = {}
-
-local default_config = {
+local config = {
 	disabled_filetype = {
 		"",
 		"help",
 	},
-	separator = icons.ui.ChevronRight,
-	highlight = {
+	separator = ">",
+	highlight_group = {
 		component = "LineNr",
 		separator = "LineNr",
 	},
 }
 
 function M.setup(user_config)
-	if not utils.isempty(user_config) then
-		config.separator = user_config.separator or user_config.separator
-		config.highlight = default_config.highlight
-		config.disabled_filetype = default_config.disabled_filetype
-		if not utils.isempty(user_config.disabled_filetype) then
-			for _, db_ft in ipairs(user_config.disabled_filetype) do
-				table.insert(config.disabled_filetype, db_ft)
-			end
-		end
-
-		if not utils.isempty(user_config.highlight) then
-			local user_highlight = user_config.highlight
-			local default_highlight = default_config.highlight
-			config.highlight.component = user_highlight.component or default_highlight.component
-			config.highlight.separator = user_highlight.separator or default_highlight.separator
-		end
-	end
+	config = vim.tbl_deep_extend("force", config, user_config)
 end
 
 local get_filename = function()
-  local cwd = vim.fn.getcwd()
-  local project_dir = vim.split(cwd, "/")
-  local project_name= project_dir[#project_dir]
-  project_name = string.gsub(project_name, "-", "%%-")
+	local cwd = vim.fn.getcwd()
+	local project_dir = vim.split(cwd, "/")
+	local project_name = project_dir[#project_dir]
+	project_name = string.gsub(project_name, "-", "%%-")
 	local root = vim.fn.expand("%:h")
-  local i, j = string.find(root, project_name)
-  if not utils.isempty(i) then
-    root = string.sub(root, i)
-  end
+	local i, j = string.find(root, project_name)
+	if not utils.isempty(i) then
+		root = string.sub(root, i)
+	end
 	local filename = vim.fn.expand("%:t")
 	local extension = vim.fn.expand("%:e")
 	local value = " "
@@ -54,14 +35,18 @@ local get_filename = function()
 	if not utils.isempty(root) and root ~= "." then
 		local root_parts = utils.split(root, "/")
 		for _, rp in ipairs(root_parts) do
-			local hl_separator = "%#" .. config.highlight.separator .. "#" .. config.separator .. "%*"
-			local hl_rp = "%#" .. config.highlight.component .. "#" .. rp .. "%*"
+			local hl_separator = "%#" .. config.highlight_group.separator .. "#" .. config.separator .. "%*"
+			local hl_rp = "%#" .. config.highlight_group.component .. "#" .. rp .. "%*"
 			value = value .. hl_rp .. " " .. hl_separator .. " "
 		end
 	end
 
 	if not utils.isempty(filename) then
-		local file_icon, file_icon_color = require("nvim-web-devicons").get_icon_color(filename, extension, { default = true })
+		local file_icon, file_icon_color = require("nvim-web-devicons").get_icon_color(
+			filename,
+			extension,
+			{ default = true }
+		)
 
 		local hl_group = "FileIconColor" .. extension
 
@@ -71,7 +56,7 @@ local get_filename = function()
 			file_icon_color = ""
 		end
 		local hl_icon = "%#" .. hl_group .. "#" .. file_icon .. "%*"
-		local hl_filename = "%#" .. config.highlight.component .. "#" .. filename .. "%*"
+		local hl_filename = "%#" .. config.highlight_group.component .. "#" .. filename .. "%*"
 		value = value .. hl_icon .. " " .. hl_filename
 	end
 	return value
@@ -94,7 +79,7 @@ local get_gps = function()
 	if utils.isempty(gps_location) then
 		return ""
 	else
-		local hl_separator = "%#" .. config.highlight.separator .. "#" .. config.separator .. "%*"
+		local hl_separator = "%#" .. config.highlight_group.separator .. "#" .. config.separator .. "%*"
 		return hl_separator .. " " .. gps_location
 	end
 end
@@ -108,6 +93,7 @@ end
 
 M.get_winbar = function()
 	if excludes() then
+		vim.api.nvim_set_option_value("winbar", "", { scope = "local" })
 		return
 	end
 	local value = get_filename()
@@ -122,7 +108,7 @@ M.get_winbar = function()
 	end
 
 	if not utils.isempty(value) and utils.get_buf_option("mod") then
-		local mod = "%#".. config.highlight.component .."#" .. "●" .. "%*"
+		local mod = "%#" .. config.highlight_group.component .. "#" .. "●" .. "%*"
 		if gps_added then
 			value = value .. " " .. mod
 		else
