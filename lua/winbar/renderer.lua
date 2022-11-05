@@ -9,8 +9,8 @@ local config = {
 	},
 	separator = ">",
 	highlight_group = {
-		component = "LineNr",
-		separator = "LineNr",
+		component = "WinbarText",
+		separator = "WinbarSeparator",
 	},
 }
 
@@ -62,25 +62,25 @@ local get_filename = function()
 	return value
 end
 
-local get_gps = function()
-	local status_ok, gps = pcall(require, "winbar.gps")
+local get_navic = function()
+	local status_ok, navic = pcall(require, "winbar.navic")
 	if not status_ok then
 		return ""
 	end
 
-	local status_location_ok, gps_location = pcall(gps.get_location, {})
+	local status_location_ok, navic_location = pcall(navic.get_location, {})
 	if not status_location_ok then
 		return ""
 	end
 
-	if not gps.is_available() or gps_location == "error" then
+	if not navic.is_available() or navic_location == "error" then
 		return ""
 	end
-	if utils.isempty(gps_location) then
+	if utils.isempty(navic_location) then
 		return ""
 	else
 		local hl_separator = "%#" .. config.highlight_group.separator .. "#" .. config.separator .. "%*"
-		return hl_separator .. " " .. gps_location
+		return hl_separator .. " " .. navic_location
 	end
 end
 
@@ -93,23 +93,23 @@ end
 
 M.get_winbar = function()
 	if excludes() then
-		vim.api.nvim_set_option_value("winbar", "", { scope = "local" })
+		vim.api.nvim_set_option_value("winbar", nil, { scope = "local" })
 		return
 	end
 	local value = get_filename()
 
-	local gps_added = false
+	local navic_added = false
 	if not utils.isempty(value) then
-		local gps_value = get_gps()
-		value = value .. " " .. gps_value
-		if not utils.isempty(gps_value) then
-			gps_added = true
+		local navic_value = get_navic()
+		value = value .. " " .. navic_value
+		if not utils.isempty(navic_value) then
+			navic_added = true
 		end
 	end
 
 	if not utils.isempty(value) and utils.get_buf_option("mod") then
 		local mod = "%#" .. config.highlight_group.component .. "#" .. "●" .. "%*"
-		if gps_added then
+		if navic_added then
 			value = value .. " " .. mod
 		else
 			value = value .. mod

@@ -1,6 +1,6 @@
 ## INSTALLATION
 ```lua
-use({"loctvl842/winbar", requires = {"loctvl842/dev-icons})
+use({"loctvl842/winbar", requires = {"loctvl842/nvim-web-devicons})
 ```
 
 ## CONFIGURATION
@@ -11,7 +11,6 @@ if not status_ok then
 end
 
 winbar.setup({
-	disable_icons = false,
 	disabled_filetype = {},
 	separator = ">",
 	-- limit for amount of context shown
