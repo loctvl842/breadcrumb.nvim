@@ -93,12 +93,19 @@ function M.create_winbar()
 		{
 			group = "_winbar",
 			callback = function()
-				redenrer.get_winbar()
+
+        local winbar_value = redenrer.get_winbar()
+        local status_ok, _ = pcall(vim.api.nvim_set_option_value, "winbar", winbar_value, { scope = "local" })
+        if not status_ok then
+          return
+        end
 			end,
 		}
 	)
 end
 
-M.create_winbar()
+function M.get_winbar()
+  return redenrer.get_winbar()
+end
 
 return M

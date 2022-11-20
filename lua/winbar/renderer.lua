@@ -19,16 +19,23 @@ function M.setup(user_config)
 end
 
 local get_filename = function()
+	local cur_filename = vim.fn.expand("%:t")
+  if M.filename == cur_filename then
+    return M.filename_output
+  end
+  M.filename = cur_filename
+
 	local cwd = vim.fn.getcwd()
 	local project_dir = vim.split(cwd, "/")
 	local project_name = project_dir[#project_dir]
-	project_name = string.gsub(project_name, "-", "%%-")
 	local root = vim.fn.expand("%:h")
+
+
+	project_name = string.gsub(project_name, "-", "%%-")
 	local i, j = string.find(root, project_name)
 	if not utils.isempty(i) then
 		root = string.sub(root, i)
 	end
-	local filename = vim.fn.expand("%:t")
 	local extension = vim.fn.expand("%:e")
 	local value = " "
 
@@ -41,9 +48,9 @@ local get_filename = function()
 		end
 	end
 
-	if not utils.isempty(filename) then
+	if not utils.isempty(cur_filename) then
 		local file_icon, file_icon_color = require("nvim-web-devicons").get_icon_color(
-			filename,
+			cur_filename,
 			extension,
 			{ default = true }
 		)
@@ -56,8 +63,9 @@ local get_filename = function()
 			file_icon_color = ""
 		end
 		local hl_icon = "%#" .. hl_group .. "#" .. file_icon .. "%*"
-		local hl_filename = "%#" .. config.highlight_group.component .. "#" .. filename .. "%*"
+		local hl_filename = "%#" .. config.highlight_group.component .. "#" .. cur_filename .. "%*"
 		value = value .. hl_icon .. " " .. hl_filename
+    M.filename_output = value
 	end
 	return value
 end
@@ -98,30 +106,27 @@ M.get_winbar = function()
 	if excludes() then
 		return
 	end
-	local value = get_filename()
+	local winbar_output = get_filename()
 
 	local navic_added = false
-	if not utils.isempty(value) then
+	if not utils.isempty(winbar_output) then
 		local navic_value = get_navic()
-		value = value .. " " .. navic_value
+		winbar_output = winbar_output .. " " .. navic_value
 		if not utils.isempty(navic_value) then
 			navic_added = true
 		end
 	end
 
-	if not utils.isempty(value) and utils.get_buf_option("mod") then
+	if not utils.isempty(winbar_output) and utils.get_buf_option("mod") then
 		local mod = "%#" .. config.highlight_group.component .. "#" .. "●" .. "%*"
 		if navic_added then
-			value = value .. " " .. mod
+			winbar_output = winbar_output .. " " .. mod
 		else
-			value = value .. mod
+			winbar_output = winbar_output .. mod
 		end
 	end
+  return winbar_output
 
-	local status_ok, _ = pcall(vim.api.nvim_set_option_value, "winbar", value, { scope = "local" })
-	if not status_ok then
-		return
-	end
 end
 
 return M
