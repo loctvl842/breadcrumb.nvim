@@ -63,6 +63,7 @@ end
 
 function M.setup(user_config)
 	default_config = vim.tbl_deep_extend("force", default_config, user_config)
+  renderer.active = true
 	setup_command()
 	add_defaultHighlight()
 	local navic_config = {
