@@ -93,29 +93,6 @@ local function get_navic()
 	end
 end
 
-function M.disable_breadcrumb()
-	if not M.active then
-		return
-	end
-  M.active = false
-  local status_ok, _ = pcall(vim.api.nvim_del_augroup_by_name, "_breadcrumb")
-  if not status_ok then
-    return
-  end
-	
-	vim.api.nvim_set_option_value("winbar", "", { scope = "local" })
-end
-
-function M.enable_breadcrumb()
-	if M.active then
-		return
-	end
-  M.active = true
-	M.create_breadcrumb()
-	local breadcrumb_value = M.get_filename()
-	vim.api.nvim_set_option_value("winbar", breadcrumb_value, { scope = "local" })
-end
-
 function M.get_breadcrumb()
   if not M.active then
     return ""
@@ -172,6 +149,29 @@ function M.create_breadcrumb()
 			end
 		end,
 	})
+end
+
+function M.disable_breadcrumb()
+	if not M.active then
+		return
+	end
+  M.active = false
+  local status_ok, _ = pcall(vim.api.nvim_del_augroup_by_name, "_breadcrumb")
+  if not status_ok then
+    return
+  end
+	
+	vim.api.nvim_set_option_value("winbar", "", { scope = "local" })
+end
+
+function M.enable_breadcrumb()
+	if M.active then
+		return
+	end
+  M.active = true
+	M.create_breadcrumb()
+	local breadcrumb_value = M.get_filename()
+	vim.api.nvim_set_option_value("winbar", breadcrumb_value, { scope = "local" })
 end
 
 return M
