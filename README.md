@@ -1,7 +1,7 @@
 ## INSTALLATION
 
 ```lua
-use({"loctvl842/breadcrumb.nvim", requires = {"nvim-tree/nvim-web-devicons"})
+use("loctvl842/breadcrumb.nvim", requires = {"nvim-tree/nvim-web-devicons"})
 ```
 
 ## CONFIGURATION
