@@ -1,28 +1,51 @@
 ## INSTALLATION
+
 ```lua
-use({"loctvl842/winbar", requires = {"loctvl842/nvim-web-devicons})
+use({"loctvl842/breadcrumb.nvim", requires = {"nvim-tree/nvim-web-devicons"})
 ```
 
 ## CONFIGURATION
-```lua
-local status_ok, winbar = pcall(require, "winbar")
-if not status_ok then
-	return
-end
 
-winbar.setup({
-	disabled_filetype = {},
+```lua
+require("breadcrumb").setup({
+	disabled_filetype = {
+		"",
+		"help",
+	},
+	icons = {
+		File = " ",
+		Module = " ",
+		Namespace = " ",
+		Package = " ",
+		Class = " ",
+		Method = " ",
+		Property = " ",
+		Field = " ",
+		Constructor = " ",
+		Enum = "練",
+		Interface = "練",
+		Function = " ",
+		Variable = " ",
+		Constant = " ",
+		String = " ",
+		Number = " ",
+		Boolean = "◩ ",
+		Array = " ",
+		Object = " ",
+		Key = " ",
+		Null = "ﳠ ",
+		EnumMember = " ",
+		Struct = " ",
+		Event = " ",
+		Operator = " ",
+		TypeParameter = " ",
+	},
 	separator = ">",
-	-- limit for amount of context shown
-	-- 0 means no limit
-	-- Note: to make use of depth feature properly, make sure your separator isn't something that can appear
-	-- in context names (eg: function names, class names, etc)
-	depth = 0,
-	-- indicator used when context hits depth limit
+	depth_limit = 0,
 	depth_limit_indicator = "..",
-	highlight = {
-		component = "LineNr",
-		separator = "LineNr",
+	highlight_group = {
+		component = "BreadcrumbText",
+		separator = "BreadcrumbSeparator",
 	},
 })
 ```
