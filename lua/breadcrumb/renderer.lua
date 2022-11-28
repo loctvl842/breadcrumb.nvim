@@ -1,4 +1,4 @@
-local utils = require("winbar.utils")
+local utils = require("breadcrumb.utils")
 
 M = {}
 
@@ -71,7 +71,7 @@ local get_filename = function()
 end
 
 local get_navic = function()
-	local status_ok, navic = pcall(require, "winbar.navic")
+	local status_ok, navic = pcall(require, "breadcrumb.navic")
 	if not status_ok then
 		return ""
 	end
@@ -92,40 +92,27 @@ local get_navic = function()
 	end
 end
 
-local excludes = function()
-	if vim.tbl_contains(config.disabled_filetype, vim.bo.filetype) then
-		if vim.bo.filetype ~= "neo-tree" then
-			vim.api.nvim_set_option_value("winbar", nil, { scope = "local" })
-		end
-		return true
-	end
-	return false
-end
-
-M.get_winbar = function()
-	if excludes() then
-		return
-	end
-	local winbar_output = get_filename()
+M.get_breadcrumb = function()
+	local breadcrumb_output = get_filename()
 
 	local navic_added = false
-	if not utils.isempty(winbar_output) then
+	if not utils.isempty(breadcrumb_output) then
 		local navic_value = get_navic()
-		winbar_output = winbar_output .. " " .. navic_value
+		breadcrumb_output = breadcrumb_output .. " " .. navic_value
 		if not utils.isempty(navic_value) then
 			navic_added = true
 		end
 	end
 
-	if not utils.isempty(winbar_output) and utils.get_buf_option("mod") then
+	if not utils.isempty(breadcrumb_output) and utils.get_buf_option("mod") then
 		local mod = "%#" .. config.highlight_group.component .. "#" .. "●" .. "%*"
 		if navic_added then
-			winbar_output = winbar_output .. " " .. mod
+			breadcrumb_output = breadcrumb_output .. " " .. mod
 		else
-			winbar_output = winbar_output .. mod
+			breadcrumb_output = breadcrumb_output .. mod
 		end
 	end
-  return winbar_output
+  return breadcrumb_output
 
 end
 
