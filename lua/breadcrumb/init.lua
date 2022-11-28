@@ -1,10 +1,6 @@
-local redenrer = require("breadcrumb.renderer")
+local renderer = require("breadcrumb.renderer")
 local navic = require("breadcrumb.navic")
 local utils = require("breadcrumb.utils")
-local space = ""
-if vim.fn.has("mac") == 1 then
-	space = " "
-end
 
 local M = {}
 
@@ -45,13 +41,30 @@ local default_config = {
 	depth_limit = 0,
 	depth_limit_indicator = "..",
 	highlight_group = {
-		component = "WinbarText",
-		separator = "WinbarSeparator",
+		component = "BreadcrumbText",
+		separator = "BreadcrumbSeparator",
 	},
 }
 
+local function add_defaultHighlight()
+	vim.cmd("highlight BreadcrumbText guifg=#c0c0c0")
+	vim.cmd("highlight BreadcrumbSeparator guifg=#c0c0c0")
+end
+
+local function setup_command()
+	local cmd = vim.api.nvim_create_user_command
+	cmd("BreadcrumbEnable", function()
+		renderer.enable_breadcrumb()
+	end, {})
+	cmd("BreadcrumbDisable", function()
+		renderer.disable_breadcrumb()
+	end, {})
+end
+
 function M.setup(user_config)
 	default_config = vim.tbl_deep_extend("force", default_config, user_config)
+	setup_command()
+	add_defaultHighlight()
 	local navic_config = {
 		icons = default_config.icons,
 		separator = default_config.separator,
@@ -64,53 +77,20 @@ function M.setup(user_config)
 		separator = default_config.separator,
 		highlight_group = default_config.highlight_group,
 	}
-	navic.setup(default_config)
-	redenrer.setup(renderer_config)
+	navic.setup(navic_config)
+	renderer.setup(renderer_config)
 end
 
 function M.attach(client, bufnr)
 	navic.attach(client, bufnr)
 end
 
-local excludes = function()
-	if vim.tbl_contains(default_config.disabled_filetype, vim.bo.filetype) then
-		return true
-	end
-	return false
-end
-
 function M.create_breadcrumb()
-	vim.api.nvim_create_augroup("_breadcrumb", {})
-	vim.api.nvim_create_autocmd({
-		"CursorHoldI",
-		"CursorHold",
-		"BufWinEnter",
-		"BufFilePost",
-		"InsertEnter",
-		"BufWritePost",
-		"TabClosed",
-	}, {
-		group = "_breadcrumb",
-		callback = function()
-			if excludes() then
-				return
-			end
-			local breadcrumb_value = redenrer.get_breadcrumb()
-			local status_ok, _ = pcall(
-				vim.api.nvim_set_option_value,
-				"breadcrumb",
-				breadcrumb_value,
-				{ scope = "local" }
-			)
-			if not status_ok then
-				return
-			end
-		end,
-	})
+  renderer.create_breadcrumb()
 end
 
 function M.get_breadcrumb()
-	return redenrer.get_breadcrumb()
+	return renderer.get_breadcrumb()
 end
 
 return M

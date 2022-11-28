@@ -1,6 +1,8 @@
 local utils = require("breadcrumb.utils")
 
-M = {}
+M = {
+	active = true,
+}
 
 local config = {
 	disabled_filetype = {
@@ -9,8 +11,8 @@ local config = {
 	},
 	separator = ">",
 	highlight_group = {
-		component = "WinbarText",
-		separator = "WinbarSeparator",
+		component = "BreadcrumbText",
+		separator = "BreadcrumbSeparator",
 	},
 }
 
@@ -18,18 +20,17 @@ function M.setup(user_config)
 	config = vim.tbl_deep_extend("force", config, user_config)
 end
 
-local get_filename = function()
+function M.get_filename()
 	local cur_filename = vim.fn.expand("%:t")
-  if M.filename == cur_filename then
-    return M.filename_output
-  end
-  M.filename = cur_filename
+	if M.filename == cur_filename then
+		return M.filename_output
+	end
+	M.filename = cur_filename
 
 	local cwd = vim.fn.getcwd()
 	local project_dir = vim.split(cwd, "/")
 	local project_name = project_dir[#project_dir]
 	local root = vim.fn.expand("%:h")
-
 
 	project_name = string.gsub(project_name, "-", "%%-")
 	local i, j = string.find(root, project_name)
@@ -65,12 +66,12 @@ local get_filename = function()
 		local hl_icon = "%#" .. hl_group .. "#" .. file_icon .. "%*"
 		local hl_filename = "%#" .. config.highlight_group.component .. "#" .. cur_filename .. "%*"
 		value = value .. hl_icon .. " " .. hl_filename
-    M.filename_output = value
+		M.filename_output = value
 	end
 	return value
 end
 
-local get_navic = function()
+local function get_navic()
 	local status_ok, navic = pcall(require, "breadcrumb.navic")
 	if not status_ok then
 		return ""
@@ -92,8 +93,34 @@ local get_navic = function()
 	end
 end
 
-M.get_breadcrumb = function()
-	local breadcrumb_output = get_filename()
+function M.disable_breadcrumb()
+	if not M.active then
+		return
+	end
+  M.active = false
+  local status_ok, _ = pcall(vim.api.nvim_del_augroup_by_name, "_breadcrumb")
+  if not status_ok then
+    return
+  end
+	
+	vim.api.nvim_set_option_value("winbar", "", { scope = "local" })
+end
+
+function M.enable_breadcrumb()
+	if M.active then
+		return
+	end
+  M.active = true
+	M.create_breadcrumb()
+	local breadcrumb_value = M.get_filename()
+	vim.api.nvim_set_option_value("winbar", breadcrumb_value, { scope = "local" })
+end
+
+function M.get_breadcrumb()
+  if not M.active then
+    return ""
+  end
+	local breadcrumb_output = M.get_filename()
 
 	local navic_added = false
 	if not utils.isempty(breadcrumb_output) then
@@ -112,8 +139,39 @@ M.get_breadcrumb = function()
 			breadcrumb_output = breadcrumb_output .. mod
 		end
 	end
-  return breadcrumb_output
+	return breadcrumb_output
+end
 
+local excludes = function()
+	if vim.tbl_contains(config.disabled_filetype, vim.bo.filetype) then
+		return true
+	end
+	return false
+end
+
+function M.create_breadcrumb()
+	vim.api.nvim_create_augroup("_breadcrumb", {})
+	vim.api.nvim_create_autocmd({
+		"CursorHoldI",
+		"CursorHold",
+		"BufWinEnter",
+		"BufFilePost",
+		"InsertEnter",
+		"BufWritePost",
+		"TabClosed",
+	}, {
+		group = "_breadcrumb",
+		callback = function()
+			if excludes() then
+				return
+			end
+			local breadcrumb_value = M.get_breadcrumb()
+			local status_ok, _ = pcall(vim.api.nvim_set_option_value, "winbar", breadcrumb_value, { scope = "local" })
+			if not status_ok then
+				return
+			end
+		end,
+	})
 end
 
 return M
