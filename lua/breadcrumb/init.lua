@@ -10,32 +10,39 @@ local default_config = {
 		"help",
 	},
 	icons = {
-		File = " ",
-		Module = " ",
-		Namespace = " ",
-		Package = " ",
+		Array = " ",
+		Boolean = "蘒",
 		Class = " ",
-		Method = " ",
-		Property = " ",
-		Field = " ",
-		Constructor = " ",
-		Enum = "練",
-		Interface = "練",
-		Function = " ",
-		Variable = " ",
-		Constant = " ",
-		String = " ",
-		Number = " ",
-		Boolean = "◩ ",
-		Array = " ",
-		Object = " ",
-		Key = " ",
-		Null = "ﳠ ",
+		Color = " ",
+		Constant = " ",
+		Constructor = " ",
+		Enum = " ",
 		EnumMember = " ",
-		Struct = " ",
 		Event = " ",
+		Field = " ",
+		File = " ",
+		Folder = " ",
+		Function = " ",
+		Interface = " ",
+		Key = " ",
+		Keyword = " ",
+		Method = " ",
+		Module = " ",
+		Namespace = " ",
+		Null = "ﳠ ",
+		Number = " ",
+		Object = " ",
 		Operator = " ",
+		Package = " ",
+		Property = " ",
+		Reference = " ",
+		Snippet = " ",
+		String = " ",
+		Struct = " ",
+		Text = " ",
 		TypeParameter = " ",
+		Unit = " ",
+		Variable = " ",
 	},
 	separator = ">",
 	depth_limit = 0,
@@ -63,7 +70,7 @@ end
 
 function M.setup(user_config)
 	default_config = vim.tbl_deep_extend("force", default_config, user_config)
-  renderer.active = true
+	renderer.active = true
 	setup_command()
 	add_defaultHighlight()
 	local navic_config = {
@@ -87,7 +94,7 @@ function M.attach(client, bufnr)
 end
 
 function M.create_breadcrumb()
-  renderer.create_breadcrumb()
+	renderer.create_breadcrumb()
 end
 
 function M.get_breadcrumb()
