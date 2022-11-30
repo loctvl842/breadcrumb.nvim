@@ -3,6 +3,8 @@ local navic = require("breadcrumb.navic")
 local utils = require("breadcrumb.utils")
 
 local M = {}
+local isBreadcrumb_enabled = true
+local isInit = false
 
 local default_config = {
 	disabled_filetype = {
@@ -58,13 +60,38 @@ local function add_defaultHighlight()
 	vim.cmd("highlight BreadcrumbSeparator guifg=#c0c0c0")
 end
 
+local function disable_breadcrumb()
+	if not isBreadcrumb_enabled then
+		return
+	end
+  isBreadcrumb_enabled = false
+	local status_ok, _ = pcall(vim.api.nvim_del_augroup_by_name, "_breadcrumb")
+	if not status_ok then
+		return
+	end
+
+	vim.api.nvim_set_option_value("winbar", "", { scope = "local" })
+end
+
+local function enable_breadcrumb()
+	if isBreadcrumb_enabled then
+		return
+	end
+	isBreadcrumb_enabled = true
+  if isInit then
+    M.init()
+  end
+	local breadcrumb_value = renderer.get_filepath()
+	vim.api.nvim_set_option_value("winbar", breadcrumb_value, { scope = "local" })
+end
+
 local function setup_command()
 	local cmd = vim.api.nvim_create_user_command
 	cmd("BreadcrumbEnable", function()
-		renderer.enable_breadcrumb()
+		enable_breadcrumb()
 	end, {})
 	cmd("BreadcrumbDisable", function()
-		renderer.disable_breadcrumb()
+		disable_breadcrumb()
 	end, {})
 end
 
@@ -93,12 +120,44 @@ function M.attach(client, bufnr)
 	navic.attach(client, bufnr)
 end
 
-function M.create_breadcrumb()
-	renderer.create_breadcrumb()
+local excludes = function()
+	if vim.tbl_contains(default_config.disabled_filetype, vim.bo.filetype) then
+		return true
+	end
+	return false
+end
+
+function M.init()
+  isInit = true
+	vim.api.nvim_create_augroup("_breadcrumb", {})
+	vim.api.nvim_create_autocmd({
+		"CursorHoldI",
+		"CursorHold",
+		"BufWinEnter",
+		"BufFilePost",
+		"InsertEnter",
+		"BufWritePost",
+		"TabClosed",
+	}, {
+		group = "_breadcrumb",
+		callback = function()
+			if excludes() then
+				return
+			end
+			local breadcrumb_value = renderer.create_breadcrumb()
+			local status_ok, _ = pcall(vim.api.nvim_set_option_value, "winbar", breadcrumb_value, { scope = "local" })
+			if not status_ok then
+				return
+			end
+		end,
+	})
 end
 
 function M.get_breadcrumb()
-	return renderer.get_breadcrumb()
+	if not isBreadcrumb_enabled then
+		return ""
+	end
+	return renderer.create_breadcrumb()
 end
 
 return M
