@@ -68,7 +68,7 @@ end
 ## 🚀 Usage
 - We can turn on `breadcrumb` by put this in the config file:
 ```lua
-require("breadcrumb").create_breadcrumb()
+require("breadcrumb").init()
 ```
 - Recommend using method `get_breadcrumb()` combine with status line plugin for example `lualine`
 ```lua
