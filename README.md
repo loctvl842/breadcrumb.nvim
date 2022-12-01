@@ -43,7 +43,7 @@ require("breadcrumb").setup({
 	separator = ">",
 	depth_limit = 0,
 	depth_limit_indicator = "..",
-    color_icons = true,
+    	color_icons = true,
 	highlight_group = {
 		component = "BreadcrumbText",
 		separator = "BreadcrumbSeparator",
