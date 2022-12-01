@@ -1,6 +1,7 @@
 local renderer = require("breadcrumb.renderer")
 local navic = require("breadcrumb.navic")
 local utils = require("breadcrumb.utils")
+local highlight = require("breadcrumb.highlight")
 
 local M = {}
 local isBreadcrumb_enabled = true
@@ -46,6 +47,7 @@ local default_config = {
 		Unit = " ",
 		Variable = " ",
 	},
+  color_icons = true,
 	separator = ">",
 	depth_limit = 0,
 	depth_limit_indicator = "..",
@@ -114,6 +116,9 @@ function M.setup(user_config)
 	}
 	navic.setup(navic_config)
 	renderer.setup(renderer_config)
+  if default_config.color_icons then
+    highlight.initialise()
+  end
 end
 
 function M.attach(client, bufnr)

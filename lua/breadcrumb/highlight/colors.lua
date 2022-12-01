@@ -1,0 +1,18 @@
+return {
+	black = "#221f22",
+	lightBlack = "#727072",
+	red = "#ff6188",
+	lightRed = "#ff6188",
+	green = "#a9dc76",
+	lightGreen = "#a9dc76",
+	yellow = "#ffd866",
+	lightYellow = "#ffd866",
+	blue = "#fc9867",
+	lightBlue = "#fc9867",
+	lightMagenta = "#ab9df2",
+	magenta = "#ab9df2",
+	cyan = "#78dce8",
+	lightCyan = "#78dce8",
+	white = "#fcfcfa",
+	lightWhite = "#BEBDBD",
+}
