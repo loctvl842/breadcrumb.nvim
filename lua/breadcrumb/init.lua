@@ -157,6 +157,9 @@ function M.get_breadcrumb()
 	if not isBreadcrumb_enabled then
 		return ""
 	end
+  if excludes() then
+    return ""
+  end
 	return renderer.create_breadcrumb()
 end
 
