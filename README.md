@@ -105,3 +105,6 @@ lualine.setup(config)
 ## Command
 - `BreadcrumbEnable` command to enable `breadcrumb`
 - `BreadcrumbDisable` command to disable `breadcrumb`
+
+## TODO
+- [ ] add default highlight for icons
