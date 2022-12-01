@@ -366,8 +366,8 @@ local config = {
 	depth_limit_indicator = "..",
 	safe_output = true,
 	highlight_group = {
-		component = "WinbarFg",
-		separator = "WinbarFg",
+		component = "WinBar",
+		separator = "WinBar",
 	},
 }
 
@@ -486,7 +486,7 @@ function M.get_location(opts)
 	local location = {}
 
 	local function add_hl(kind, name)
-		return "%#WinbarIcons"
+		return "%#BreadcrumbIcons"
 			.. lsp_num_to_str[kind]
 			.. "#"
 			.. local_config.icons[kind]
@@ -517,7 +517,7 @@ function M.get_location(opts)
 	if local_config.depth_limit ~= 0 and #location > local_config.depth_limit then
 		location = vim.list_slice(location, #location - local_config.depth_limit + 1, #location)
 		if local_config.highlight then
-			table.insert(location, 1, "%#WinbarBg#" .. local_config.depth_limit_indicator .. "%*")
+			table.insert(location, 1, "%#WinBar#" .. local_config.depth_limit_indicator .. "%*")
 		else
 			table.insert(location, 1, local_config.depth_limit_indicator)
 		end
