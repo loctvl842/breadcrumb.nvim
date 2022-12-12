@@ -71,7 +71,7 @@ end
 ```lua
 require("breadcrumb").init()
 ```
-- Recommend using method `get_breadcrumb()` combine with status line plugin for example `lualine`
+- Using method `get_breadcrumb()` combine with status line plugin for example `lualine`
 ```lua
 local breadcrumb = function()
 	local breadcrumb_status_ok, breadcrumb = pcall(require, "breadcrumb")
@@ -108,4 +108,4 @@ lualine.setup(config)
 - `BreadcrumbDisable` command to disable `breadcrumb`
 
 ## TODO
-- [ ] add default highlight for icons
+- [x] add default highlight for icons
