@@ -47,7 +47,7 @@ local default_config = {
 		Unit = " ",
 		Variable = " ",
 	},
-  color_icons = true,
+	color_icons = true,
 	separator = ">",
 	depth_limit = 0,
 	depth_limit_indicator = "..",
@@ -66,7 +66,7 @@ local function disable_breadcrumb()
 	if not isBreadcrumb_enabled then
 		return
 	end
-  isBreadcrumb_enabled = false
+	isBreadcrumb_enabled = false
 	local status_ok, _ = pcall(vim.api.nvim_del_augroup_by_name, "_breadcrumb")
 	if not status_ok then
 		return
@@ -80,9 +80,9 @@ local function enable_breadcrumb()
 		return
 	end
 	isBreadcrumb_enabled = true
-  if isInit then
-    M.init()
-  end
+	if isInit then
+		M.init()
+	end
 	local breadcrumb_value = renderer.get_filepath()
 	vim.api.nvim_set_option_value("winbar", breadcrumb_value, { scope = "local" })
 end
@@ -116,9 +116,9 @@ function M.setup(user_config)
 	}
 	navic.setup(navic_config)
 	renderer.setup(renderer_config)
-  if default_config.color_icons then
-    highlight.initialise()
-  end
+	if default_config.color_icons then
+		highlight.initialise()
+	end
 end
 
 function M.attach(client, bufnr)
@@ -133,7 +133,7 @@ local excludes = function()
 end
 
 function M.init()
-  isInit = true
+	isInit = true
 	vim.api.nvim_create_augroup("_breadcrumb", {})
 	vim.api.nvim_create_autocmd({
 		"CursorHoldI",
@@ -150,7 +150,7 @@ function M.init()
 				return
 			end
 			local breadcrumb_value = renderer.create_breadcrumb()
-			local status_ok, _ = pcall(vim.api.nvim_set_option_value, "winbar", breadcrumb_value, { scope = "local" })
+			local status_ok, _ = pcall(vim.api.nvim_set_option_value, "winbar", breadcrumb_value, { scope = "global" })
 			if not status_ok then
 				return
 			end
@@ -162,9 +162,9 @@ function M.get_breadcrumb()
 	if not isBreadcrumb_enabled then
 		return ""
 	end
-  if excludes() then
-    return ""
-  end
+	if excludes() then
+		return ""
+	end
 	return renderer.create_breadcrumb()
 end
 
