@@ -72,7 +72,7 @@ local function disable_breadcrumb()
 		return
 	end
 
-	vim.api.nvim_set_option_value("winbar", "", { scope = "local" })
+	vim.api.nvim_set_option_value("winbar", "", { scope = "global" })
 end
 
 local function enable_breadcrumb()
